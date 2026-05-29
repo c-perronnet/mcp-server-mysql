@@ -7,7 +7,7 @@
 
 ## MCP Server for MySQL based on NodeJS
 
-[![Trust Score](https://archestra.ai/mcp-catalog/api/badge/quality/benborla/mcp-server-mysql)](https://archestra.ai/mcp-catalog/benborla__mcp-server-mysql)
+[![Trust Score](https://archestra.ai/mcp-catalog/api/badge/quality/c-perronnet/mcp-server-mysql)](https://archestra.ai/mcp-catalog/c-perronnet__mcp-server-mysql)
 
 ### Key Features of This Fork
 
@@ -53,13 +53,13 @@ A Model Context Protocol server that provides access to MySQL databases through 
 
 ### Using Smithery
 
-There are several ways to install and configure the MCP server but the most common would be checking this website [https://smithery.ai/server/@benborla29/mcp-server-mysql](https://smithery.ai/server/@benborla29/mcp-server-mysql)
+There are several ways to install and configure the MCP server but the most common would be checking this website [https://smithery.ai/server/@c-perronnet/mcp-server-mysql](https://smithery.ai/server/@c-perronnet/mcp-server-mysql)
 
 ### Cursor
 
 For Cursor IDE, you can install this MCP server with the following command in your project:
 
-1. Visit [https://smithery.ai/server/@benborla29/mcp-server-mysql](https://smithery.ai/server/@benborla29/mcp-server-mysql)
+1. Visit [https://smithery.ai/server/@c-perronnet/mcp-server-mysql](https://smithery.ai/server/@c-perronnet/mcp-server-mysql)
 2. Follow the instruction for Cursor
 
 MCP Get provides a centralized registry of MCP servers and simplifies the installation process.
@@ -78,7 +78,7 @@ codex mcp add mcp_server_mysql \
   --env ALLOW_INSERT_OPERATION="false" \
   --env ALLOW_UPDATE_OPERATION="false" \
   --env ALLOW_DELETE_OPERATION="false" \
-  -- npx -y @benborla29/mcp-server-mysql
+  -- npx -y @c-perronnet/mcp-server-mysql
 ```
 
 ### Claude Code
@@ -101,10 +101,10 @@ First, install the package globally:
 
 ```bash
 # Using npm
-npm install -g @benborla29/mcp-server-mysql
+npm install -g @c-perronnet/mcp-server-mysql
 
 # Using pnpm
-pnpm add -g @benborla29/mcp-server-mysql
+pnpm add -g @c-perronnet/mcp-server-mysql
 ```
 
 Then add the server to Claude Code:
@@ -119,7 +119,7 @@ claude mcp add mcp_server_mysql \
   -e ALLOW_INSERT_OPERATION="false" \
   -e ALLOW_UPDATE_OPERATION="false" \
   -e ALLOW_DELETE_OPERATION="false" \
-  -- npx @benborla29/mcp-server-mysql
+  -- npx @c-perronnet/mcp-server-mysql
 ```
 
 **Using Local Repository (for development):**
@@ -160,7 +160,7 @@ claude mcp add mcp_server_mysql \
   -e ALLOW_INSERT_OPERATION="false" \
   -e ALLOW_UPDATE_OPERATION="false" \
   -e ALLOW_DELETE_OPERATION="false" \
-  -- npx @benborla29/mcp-server-mysql
+  -- npx @c-perronnet/mcp-server-mysql
 ```
 
 #### Choosing the Right Scope
@@ -206,7 +206,7 @@ claude mcp add mcp_server_mysql_multi \
   -e MYSQL_USER="root" \
   -e MYSQL_PASS="your_password" \
   -e MULTI_DB_WRITE_MODE="false" \
-  -- npx @benborla29/mcp-server-mysql
+  -- npx @c-perronnet/mcp-server-mysql
 ```
 
 #### Advanced Configuration
@@ -229,7 +229,7 @@ claude mcp add mcp_server_mysql \
   -e ALLOW_UPDATE_OPERATION="false" \
   -e ALLOW_DELETE_OPERATION="false" \
   -e MYSQL_ENABLE_LOGGING="true" \
-  -- npx @benborla29/mcp-server-mysql
+  -- npx @c-perronnet/mcp-server-mysql
 ```
 
 #### Troubleshooting Claude Code Setup
@@ -255,7 +255,7 @@ claude mcp add mcp_server_mysql \
 
    ```bash
    # Test the server directly
-   npx @benborla29/mcp-server-mysql
+   npx @c-perronnet/mcp-server-mysql
    ```
 
 ### Using NPM/PNPM
@@ -264,10 +264,10 @@ For manual installation:
 
 ```bash
 # Using npm
-npm install -g @benborla29/mcp-server-mysql
+npm install -g @c-perronnet/mcp-server-mysql
 
 # Using pnpm
-pnpm add -g @benborla29/mcp-server-mysql
+pnpm add -g @c-perronnet/mcp-server-mysql
 ```
 
 After manual installation, you'll need to configure your LLM application to use the MCP server (see Configuration section below).
@@ -279,7 +279,7 @@ If you want to clone and run this MCP server directly from the source code, foll
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/benborla/mcp-server-mysql.git
+   git clone https://github.com/c-perronnet/mcp-server-mysql.git
    cd mcp-server-mysql
    ```
 
@@ -344,7 +344,7 @@ If you want to clone and run this MCP server directly from the source code, foll
 
 ### Run in remote mode
 
-To run in remote mode, you'll need to provide [environment variables](https://github.com/benborla/mcp-server-mysql?tab=readme-ov-file#environment-variables) to the npx script.
+To run in remote mode, you'll need to provide [environment variables](https://github.com/c-perronnet/mcp-server-mysql?tab=readme-ov-file#environment-variables) to the npx script.
 
 1. Create env file in preferred directory
 
@@ -353,7 +353,7 @@ To run in remote mode, you'll need to provide [environment variables](https://gi
    touch .env
    ```
 
-2. Copy-paste [example file](https://github.com/benborla/mcp-server-mysql/blob/main/.env) from this repository
+2. Copy-paste [example file](https://github.com/c-perronnet/mcp-server-mysql/blob/main/.env.dist) from this repository
 3. Set the MySQL credentials to match your environment
 4. Set `IS_REMOTE_MCP=true`
 5. Set `REMOTE_SECRET_KEY` to a secure string.
@@ -367,7 +367,7 @@ To run in remote mode, you'll need to provide [environment variables](https://gi
 8. Run the server
 
    ```bash
-   npx @benborla29/mcp-server-mysql
+   npx @c-perronnet/mcp-server-mysql
    ```
 
 9. Configure your agent to connect to the MCP with the next configuration:
@@ -447,7 +447,7 @@ The server provides comprehensive database information:
 If you installed using Smithery, your configuration is already set up. You can view or modify it with:
 
 ```bash
-smithery configure @benborla29/mcp-server-mysql
+smithery configure @c-perronnet/mcp-server-mysql
 ```
 
 When reconfiguring, you can update any of the MySQL connection details as well as the write operation settings:
@@ -474,7 +474,7 @@ For more control over the MCP server's behavior, you can use these advanced conf
       "command": "/path/to/npx/binary/npx",
       "args": [
         "-y",
-        "@benborla29/mcp-server-mysql"
+        "@c-perronnet/mcp-server-mysql"
       ],
       "env": {
         // Basic connection settings
@@ -789,7 +789,7 @@ OPENAI_API_KEY=your-key  npx mcp-eval evals.ts index.ts
    try this workaround:
 
    ```bash
-   npx -y -p @benborla29/mcp-server-mysql -p dotenv mcp-server-mysql
+   npx -y -p @c-perronnet/mcp-server-mysql -p dotenv mcp-server-mysql
    ```
 
    Thanks to @lizhuangs
@@ -797,11 +797,11 @@ OPENAI_API_KEY=your-key  npx mcp-eval evals.ts index.ts
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request to
-[https://github.com/benborla/mcp-server-mysql](https://github.com/benborla/mcp-server-mysql)
+[https://github.com/c-perronnet/mcp-server-mysql](https://github.com/c-perronnet/mcp-server-mysql)
 
 ## Many Thanks to the following Contributors
 
-[![Contributors](https://contrib.rocks/image?repo=benborla/mcp-server-mysql)](https://github.com/benborla/mcp-server-mysql/graphs/contributors)
+[![Contributors](https://contrib.rocks/image?repo=c-perronnet/mcp-server-mysql)](https://github.com/c-perronnet/mcp-server-mysql/graphs/contributors)
 
 ### Development Setup
 

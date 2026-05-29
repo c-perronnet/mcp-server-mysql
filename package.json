@@ -1,9 +1,12 @@
 {
-  "name": "@benborla29/mcp-server-mysql",
+  "name": "@c-perronnet/mcp-server-mysql",
   "version": "2.0.8",
   "description": "MCP server for interacting with MySQL databases with write operations support",
   "license": "MIT",
-  "author": "Ben Borla (https://github.com/benborla)",
+  "author": "Cedric Perronnet (https://github.com/c-perronnet)",
+  "contributors": [
+    "Ben Borla (https://github.com/benborla)"
+  ],
   "type": "module",
   "packageManager": "pnpm@11.4.0",
   "main": "dist/index.js",

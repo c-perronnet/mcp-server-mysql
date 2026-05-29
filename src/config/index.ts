@@ -101,7 +101,7 @@ export const isMultiDbMode =
 
 export const mcpConfig = {
   server: {
-    name: "@benborla29/mcp-server-mysql",
+    name: "@c-perronnet/mcp-server-mysql",
     version: MCP_VERSION,
     connectionTypes: ["stdio", "streamableHttp"],
   },
