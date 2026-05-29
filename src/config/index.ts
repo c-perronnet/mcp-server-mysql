@@ -130,6 +130,9 @@ export const mcpConfig = {
     keepAliveInitialDelay: 0,
     connectTimeout: process.env.MYSQL_CONNECT_TIMEOUT ? parseInt(process.env.MYSQL_CONNECT_TIMEOUT, 10) : 10000,
     authPlugins: {
+      // WARNING: mysql_clear_password transmits the password to the server in
+      // cleartext. Only use it over a TLS connection (MYSQL_SSL=true) or a trusted
+      // Unix socket, otherwise credentials can be sniffed on the wire.
       mysql_clear_password: () => () =>
         Buffer.from(
           connectionStringConfig.password !== undefined
@@ -142,8 +145,11 @@ export const mcpConfig = {
     ...(process.env.MYSQL_SSL === "true"
       ? {
           ssl: {
+            // Secure by default: verify the server certificate unless the user
+            // explicitly opts out with MYSQL_SSL_REJECT_UNAUTHORIZED=false.
+            // (Previously this defaulted to false, silently allowing MITM.)
             rejectUnauthorized:
-              process.env.MYSQL_SSL_REJECT_UNAUTHORIZED === "true",
+              process.env.MYSQL_SSL_REJECT_UNAUTHORIZED !== "false",
             // Add CA certificate if provided
             ...(process.env.MYSQL_SSL_CA
               ? { ca: readCACertificate(process.env.MYSQL_SSL_CA) }

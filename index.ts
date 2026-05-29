@@ -39,6 +39,27 @@ import {
 import express, { Request, Response } from "express";
 import { fileURLToPath } from 'url';
 import { realpathSync } from 'fs';
+import { timingSafeEqual } from 'crypto';
+
+/**
+ * Constant-time comparison of the incoming Authorization header against the
+ * expected `Bearer <secret>` value. Avoids both the `endsWith` partial-match
+ * weakness and timing side-channels that leak the secret.
+ */
+function isAuthorized(authHeader: string | undefined, secret: string): boolean {
+  if (!authHeader || !secret) {
+    return false;
+  }
+  const expected = `Bearer ${secret}`;
+  const a = Buffer.from(authHeader);
+  const b = Buffer.from(expected);
+  // timingSafeEqual throws if lengths differ, so guard first. The length check
+  // itself is not secret-dependent (expected length is fixed for a given secret).
+  if (a.length !== b.length) {
+    return false;
+  }
+  return timingSafeEqual(a, b);
+}
 
 
 log("info", `Starting MySQL MCP server v${version}...`);
@@ -150,30 +171,13 @@ export default function createMcpServer({
       version: process.env.npm_package_version || "1.0.0",
     },
     {
+      // Declare capabilities. The concrete tool/resource definitions are served
+      // by the ListTools / ListResources request handlers below; the capability
+      // object only advertises support (SDK >=1.26 types `tools` as
+      // { listChanged?: boolean }, not a tool map).
       capabilities: {
         resources: {},
-        tools: {
-          mysql_query: {
-            description: toolDescription,
-            inputSchema: {
-              type: "object",
-              properties: {
-                sql: {
-                  type: "string",
-                  description: "The SQL query to execute",
-                },
-              },
-              required: ["sql"],
-            },
-            annotations: {
-              readOnlyHint: isReadOnly,
-              idempotentHint: isReadOnly,
-              destructiveHint: !isReadOnly,
-              openWorldHint: false,
-              title: "MySQL Query",
-            },
-          },
-        },
+        tools: {},
       },
     },
   );
@@ -445,16 +449,13 @@ if (isMainModule()) {
       const mcpServer = createMcpServer({ config: { debug: false } });
       if (IS_REMOTE_MCP && REMOTE_SECRET_KEY?.length) {
         const app = express();
-        app.use(express.json());
+        // Cap request body size to mitigate memory-exhaustion DoS.
+        app.use(express.json({ limit: process.env.MAX_REQUEST_BODY_SIZE || "1mb" }));
         app.post("/mcp", async (req: Request, res: Response) => {
           // In stateless mode, create a new instance of transport and server for each request
           // to ensure complete isolation. A single instance would cause request ID collisions
           // when multiple clients connect concurrently.
-          if (
-            !req.get("Authorization") ||
-            !req.get("Authorization")?.startsWith("Bearer ") ||
-            !req.get("Authorization")?.endsWith(REMOTE_SECRET_KEY)
-          ) {
+          if (!isAuthorized(req.get("Authorization"), REMOTE_SECRET_KEY)) {
             console.error("Missing or invalid Authorization header");
             res.status(401).json({
               jsonrpc: "2.0",
@@ -468,9 +469,18 @@ if (isMainModule()) {
           }
           try {
             const server = mcpServer;
+            // Optional DNS-rebinding protection: when MCP_ALLOWED_HOSTS is set
+            // (comma-separated), the transport validates the Host header. Left
+            // off by default to avoid breaking reverse-proxy setups.
+            const allowedHosts = process.env.MCP_ALLOWED_HOSTS
+              ? process.env.MCP_ALLOWED_HOSTS.split(",").map((h) => h.trim()).filter(Boolean)
+              : undefined;
             const transport: StreamableHTTPServerTransport =
               new StreamableHTTPServerTransport({
                 sessionIdGenerator: undefined,
+                ...(allowedHosts
+                  ? { enableDnsRebindingProtection: true, allowedHosts }
+                  : {}),
               });
             res.on("close", () => {
               log("info", "Request closed");
@@ -482,11 +492,12 @@ if (isMainModule()) {
           } catch (error) {
             log("error", "Error handling MCP request:", error);
             if (!res.headersSent) {
+              // Do not leak internal error details to remote clients.
               res.status(500).json({
                 jsonrpc: "2.0",
                 error: {
                   code: -32603,
-                  message: (error as any).message,
+                  message: "Internal server error",
                 },
                 id: null,
               });
@@ -524,14 +535,16 @@ if (isMainModule()) {
           );
         });
 
-        // Start the server
-        app.listen(PORT, (error) => {
+        // Start the server. Bind to loopback by default so the server is not
+        // unintentionally exposed on all interfaces; override with BIND_HOST.
+        const host = process.env.BIND_HOST || "127.0.0.1";
+        app.listen(Number(PORT), host, (error?: Error) => {
           if (error) {
             console.error("Failed to start server:", error);
             process.exit(1);
           }
           console.log(
-            `MCP Stateless Streamable HTTP Server listening on port ${PORT}`,
+            `MCP Stateless Streamable HTTP Server listening on ${host}:${PORT}`,
           );
         });
       } else {

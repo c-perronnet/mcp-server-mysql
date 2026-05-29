@@ -54,7 +54,7 @@ export interface MySQLConnectionConfig {
 }
 
 // Function to parse MySQL connection string (mysql CLI format)
-// Example: mysql --default-auth=mysql_native_password -A -hrdsproxy.staging.luno.com -P3306 -uUSER -pPASS database_name
+// Example: mysql --default-auth=mysql_native_password -A -hHOST -P3306 -uUSER -pPASS database_name
 export function parseMySQLConnectionString(
   connectionString: string,
 ): MySQLConnectionConfig {

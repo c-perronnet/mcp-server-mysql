@@ -7,7 +7,7 @@ import {
   isUpdateAllowedForSchema,
   isDeleteAllowedForSchema,
 } from "./permissions.js";
-import { extractSchemaFromQuery, getQueryTypes } from "./utils.js";
+import { extractSchemaFromQuery, extractSchemasFromQuery, getQueryTypes } from "./utils.js";
 
 import * as mysql2 from "mysql2/promise";
 import { log } from "./../utils/index.js";
@@ -62,7 +62,7 @@ async function executeQuery<T>(sql: string, params: string[] = []): Promise<T> {
   } finally {
     if (connection) {
       connection.release();
-      log("error", "Connection released");
+      log("info", "Connection released");
     }
   }
 }
@@ -73,7 +73,7 @@ async function executeWriteQuery<T>(sql: string): Promise<T> {
   try {
     const pool = await getPool();
     connection = await pool.getConnection();
-    log("error", "Write connection acquired");
+    log("info", "Write connection acquired");
 
     // Extract schema for permissions (if needed)
     const schema = extractSchemaFromQuery(sql);
@@ -168,7 +168,7 @@ async function executeWriteQuery<T>(sql: string): Promise<T> {
   } finally {
     if (connection) {
       connection.release();
-      log("error", "Write connection released");
+      log("info", "Write connection released");
     }
   }
 }
@@ -179,8 +179,12 @@ async function executeReadOnlyQuery<T>(sql: string): Promise<T> {
     // Check the type of query
     const queryTypes = await getQueryTypes(sql);
 
-    // Get schema for permission checking
+    // Get schema for permission checking. `schema` is used for human-readable
+    // messages; `schemas` is the full set of databases the query touches and is
+    // what permission decisions are based on, so a write cannot be smuggled into
+    // a different database by qualifying its table name.
     const schema = extractSchemaFromQuery(sql);
+    const schemas = extractSchemasFromQuery(sql);
 
     const isUpdateOperation = queryTypes.some((type) =>
       ["update"].includes(type),
@@ -195,8 +199,19 @@ async function executeReadOnlyQuery<T>(sql: string): Promise<T> {
       ["create", "alter", "drop", "truncate"].includes(type),
     );
 
+    // A write is only permitted if it is allowed for *every* referenced schema.
+    // When no schema can be determined (e.g. multi-DB mode with an unqualified
+    // table), fall back to the single resolved schema (possibly null), which
+    // routes to the global permission flag. Using the raw `schemas` array here
+    // would be unsafe: `[].every(...)` is vacuously true and would allow writes.
+    const schemasToCheck = schemas.length > 0 ? schemas : [schema];
+    const insertAllowed = schemasToCheck.every(isInsertAllowedForSchema);
+    const updateAllowed = schemasToCheck.every(isUpdateAllowedForSchema);
+    const deleteAllowed = schemasToCheck.every(isDeleteAllowedForSchema);
+    const ddlAllowed = schemasToCheck.every(isDDLAllowedForSchema);
+
     // Check schema-specific permissions
-    if (isInsertOperation && !isInsertAllowedForSchema(schema)) {
+    if (isInsertOperation && !insertAllowed) {
       log(
         "error",
         `INSERT operations are not allowed for schema '${schema || "default"}'. Configure SCHEMA_INSERT_PERMISSIONS.`,
@@ -212,7 +227,7 @@ async function executeReadOnlyQuery<T>(sql: string): Promise<T> {
       } as T;
     }
 
-    if (isUpdateOperation && !isUpdateAllowedForSchema(schema)) {
+    if (isUpdateOperation && !updateAllowed) {
       log(
         "error",
         `UPDATE operations are not allowed for schema '${schema || "default"}'. Configure SCHEMA_UPDATE_PERMISSIONS.`,
@@ -228,7 +243,7 @@ async function executeReadOnlyQuery<T>(sql: string): Promise<T> {
       } as T;
     }
 
-    if (isDeleteOperation && !isDeleteAllowedForSchema(schema)) {
+    if (isDeleteOperation && !deleteAllowed) {
       log(
         "error",
         `DELETE operations are not allowed for schema '${schema || "default"}'. Configure SCHEMA_DELETE_PERMISSIONS.`,
@@ -244,7 +259,7 @@ async function executeReadOnlyQuery<T>(sql: string): Promise<T> {
       } as T;
     }
 
-    if (isDDLOperation && !isDDLAllowedForSchema(schema)) {
+    if (isDDLOperation && !ddlAllowed) {
       log(
         "error",
         `DDL operations are not allowed for schema '${schema || "default"}'. Configure SCHEMA_DDL_PERMISSIONS.`,
@@ -262,10 +277,10 @@ async function executeReadOnlyQuery<T>(sql: string): Promise<T> {
 
     // For write operations that are allowed, use executeWriteQuery
     if (
-      (isInsertOperation && isInsertAllowedForSchema(schema)) ||
-      (isUpdateOperation && isUpdateAllowedForSchema(schema)) ||
-      (isDeleteOperation && isDeleteAllowedForSchema(schema)) ||
-      (isDDLOperation && isDDLAllowedForSchema(schema))
+      (isInsertOperation && insertAllowed) ||
+      (isUpdateOperation && updateAllowed) ||
+      (isDeleteOperation && deleteAllowed) ||
+      (isDDLOperation && ddlAllowed)
     ) {
       return executeWriteQuery(sql);
     }
@@ -273,7 +288,7 @@ async function executeReadOnlyQuery<T>(sql: string): Promise<T> {
     // For read-only operations, continue with the original logic
     const pool = await getPool();
     connection = await pool.getConnection();
-    log("error", "Read-only connection acquired");
+    log("info", "Read-only connection acquired");
 
     // Set read-only mode (unless disabled via environment variable)
     if (!MYSQL_DISABLE_READ_ONLY_TRANSACTIONS) {
@@ -339,7 +354,7 @@ async function executeReadOnlyQuery<T>(sql: string): Promise<T> {
   } finally {
     if (connection) {
       connection.release();
-      log("error", "Read-only connection released");
+      log("info", "Read-only connection released");
     }
   }
 }
